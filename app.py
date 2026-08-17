@@ -1,25 +1,24 @@
 from pathlib import Path
-import base64, io, sys, zipfile
+import shutil, sys, zipfile
 
 ROOT = Path(__file__).parent
-parts = []
-for p in sorted(ROOT.glob('bundle_part_*.txt')):
-    parts.append(p.read_text(encoding='utf-8').strip())
+bundle = ROOT / 'test_app_v19.zip'
+if not bundle.exists():
+    raise RuntimeError("test_app_v19.zip is missing from the repository. Upload that ZIP file to the repository root, then Streamlit will restart automatically.")
 
-if not parts:
-    raise RuntimeError('Deployment bundle is missing.')
-
-payload = base64.b64decode(''.join(parts))
 extract_dir = Path('/tmp/chumash_test_app_v19')
-extract_dir.mkdir(parents=True, exist_ok=True)
-
 marker = extract_dir / '.ready'
+
 if not marker.exists():
-    with zipfile.ZipFile(io.BytesIO(payload)) as zf:
+    if extract_dir.exists():
+        shutil.rmtree(extract_dir)
+    extract_dir.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(bundle, 'r') as zf:
+        zf.testzip()
         zf.extractall(extract_dir)
     marker.write_text('ok', encoding='utf-8')
 
-candidates = list(extract_dir.rglob('app.py'))
+candidates = [p for p in extract_dir.rglob('app.py') if p != Path(__file__)]
 if not candidates:
     raise RuntimeError('Could not find bundled app.py after extraction.')
 
