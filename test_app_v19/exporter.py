@@ -100,12 +100,18 @@ def _group(test):
         seen[sec].append(q)
     return grouped
 
+def _section_heading(doc, section_no, section, add_gap=False):
+    """Question-type headings are always bold, with a clear gap before a new type."""
+    if add_gap:
+        para(doc, '', False, 6, True, WD_ALIGN_PARAGRAPH.RIGHT, space_after=5)
+    para(doc, f'{heb_num(section_no)}. {section}', True, 13, True, WD_ALIGN_PARAGRAPH.RIGHT, space_after=5)
+
 def export_test_docx(test, config, title):
     fd,path=tempfile.mkstemp(suffix='.docx'); Path(path).unlink(missing_ok=True)
     doc=setup_doc(); bilingual=config.get('test_version')=='ivrit_english'; _header(doc,config,title)
     section_no=1
     for section,qs in _group(test):
-        para(doc, f'{heb_num(section_no)}. {section}', True, 13, True, WD_ALIGN_PARAGRAPH.RIGHT, space_after=4)
+        _section_heading(doc, section_no, section, add_gap=(section_no > 1))
         for i,q in enumerate(qs,1):
             source_tag=''
             if q.get('perek') and q.get('pasuk'):
@@ -126,7 +132,7 @@ def export_answer_key_docx(test, config, title):
     para(doc,'מפתח תשובות',True,15,True,WD_ALIGN_PARAGRAPH.CENTER,space_after=8)
     section_no=1
     for section,qs in _group(test):
-        para(doc,f'{heb_num(section_no)}. {section}',True,13,True,WD_ALIGN_PARAGRAPH.RIGHT,space_after=4)
+        _section_heading(doc, section_no, section, add_gap=(section_no > 1))
         for i,q in enumerate(qs,1):
             para(doc,f'{marker(i)} {q.get("prompt","")}',True,10,True,WD_ALIGN_PARAGRAPH.RIGHT,space_after=1)
             if bilingual and q.get('prompt_en'): para(doc,q.get('prompt_en',''),False,9,False,WD_ALIGN_PARAGRAPH.LEFT,space_after=1)
